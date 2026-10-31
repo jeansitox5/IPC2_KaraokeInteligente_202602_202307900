@@ -9,7 +9,7 @@ import queue
 import time
 
 from karaoke import plataforma
-from karaoke.vistas.base import AZUL, NARANJA, TEXTO_GRIS, VERDE, Pantalla, boton, etiqueta
+from karaoke.vistas.base import AZUL, NARANJA, TEXTO_GRIS, VERDE, Pantalla, boton, envolver, etiqueta, fila
 
 DURACION_PRUEBA = 8.0
 
@@ -25,20 +25,20 @@ class PantallaDiagnostico(Pantalla):
         self.btn = boton(f"Probar voz ({int(DURACION_PRUEBA)} s)", self._probar, color=AZUL)
         return self.desplazable(
             self.encabezado(),
-            etiqueta(f"Plataforma: {plataforma.describir()}", 12),
-            etiqueta(f"Base de datos: {self.app.db.ruta}", 11, color=TEXTO_GRIS),
-            etiqueta(f"{canciones} canciones · {lineas} líneas", 12),
-            etiqueta(f"Motor configurado: {self.app.cfg['MOTOR_VOZ']}", 12),
-            self.lbl_motor, self.btn, self.lbl_nivel, self.lbl_texto,
+            fila(etiqueta(f"Plataforma: {plataforma.describir()}", 12)),
+            fila(etiqueta(f"Base de datos: {self.app.db.ruta}", 11, color=TEXTO_GRIS)),
+            fila(etiqueta(f"{canciones} canciones · {lineas} líneas", 12)),
+            fila(etiqueta(f"Motor configurado: {self.app.cfg['MOTOR_VOZ']}", 12)),
+            fila(self.lbl_motor), fila(self.btn), fila(self.lbl_nivel), fila(self.lbl_texto),
         )
 
     async def al_mostrar(self):
         motor = await self.app.crear_motor()
         if motor is None:
-            self.lbl_motor.text = "No se eligió archivo de audio."
+            self.lbl_motor.text = envolver("No se eligió archivo de audio.")
             return
         ok, msg = motor.disponible()
-        self.lbl_motor.text = ("✔ " if ok else "✖ ") + msg
+        self.lbl_motor.text = envolver(("✔ " if ok else "✖ ") + msg)
         self.lbl_motor.style.color = VERDE if ok else NARANJA
 
     async def _probar(self, widget):
@@ -72,9 +72,9 @@ class PantallaDiagnostico(Pantalla):
                     else:
                         textos[-1] = obs.texto
                 estado = getattr(motor, "mensaje_estado", "")
-                self.lbl_texto.text = (estado + "\n" if estado else "") + "Transcrito: " + " | ".join(textos[-4:])
+                self.lbl_texto.text = envolver((estado + "\n" if estado else "") + "Transcrito: " + " | ".join(textos[-4:]))
                 await asyncio.sleep(0.1)
         finally:
             motor.detener()
             self.btn.enabled = True
-        self.lbl_texto.text = "Transcrito: " + (" | ".join(textos) if textos else "(nada; hable más cerca del micrófono)")
+        self.lbl_texto.text = envolver("Transcrito: " + (" | ".join(textos) if textos else "(nada; hable más cerca del micrófono)"))

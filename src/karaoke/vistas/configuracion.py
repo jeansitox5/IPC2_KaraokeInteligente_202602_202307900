@@ -5,7 +5,9 @@ Aquí se cambian, entre otros, los promedios del enunciado (10 líneas por
 canción, 80 caracteres por línea). Se guardan en la tabla CONFIGURACION.
 """
 from karaoke.config import DEFAULTS
-from karaoke.vistas.base import GRIS, TEXTO_GRIS, VERDE, Pantalla, boton, entrada, etiqueta, fila
+from karaoke.vistas.base import (
+    GRIS, TEXTO_GRIS, VERDE, Pantalla, agrupar, boton, entrada, envolver, etiqueta, fila,
+)
 
 SECCIONES = [
     ("Promedios del enunciado", ["LINEAS_POR_PAGINA", "LINEAS_PROMEDIO_CANCION",
@@ -24,16 +26,16 @@ class PantallaConfiguracion(Pantalla):
         self.campos = {}
         hijos = [self.encabezado()]
         for titulo, claves in SECCIONES:
-            hijos.append(etiqueta(titulo, 14, negrita=True))
+            hijos.append(fila(etiqueta(titulo, 14, negrita=True)))
             for clave in claves:
                 campo = entrada(valor=str(self.app.cfg[clave]))
                 self.campos[clave] = campo
-                hijos.append(etiqueta(f"{clave} — {DEFAULTS[clave][1]}", 10, color=TEXTO_GRIS))
-                hijos.append(campo)
+                hijos.append(fila(etiqueta(envolver(f"{clave} — {DEFAULTS[clave][1]}", 34), 10, color=TEXTO_GRIS)))
+                hijos.append(fila(campo))
         self.resultado = etiqueta("", 12, color=VERDE)
         hijos += [
-            fila(boton("Guardar", self._guardar, color=VERDE), boton("Valores de fábrica", self._restaurar, color=GRIS)),
-            self.resultado,
+            agrupar(boton("Guardar", self._guardar, color=VERDE), boton("Valores de fábrica", self._restaurar, color=GRIS)),
+            fila(self.resultado),
         ]
         return self.desplazable(*hijos)
 

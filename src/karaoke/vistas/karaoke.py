@@ -78,8 +78,9 @@ class VistaKaraoke:
         return textwrap.fill(texto, width=ancho) if texto else ""
 
     def mostrar(self, nombre="", codigo=None, lineas=None, idx=None, estado="", info="", mensaje=""):
-        self.lbl_estado.text = estado
-        self.lbl_cancion.text = f"[{codigo}] {nombre}" if codigo is not None else nombre
+        nombre_cancion = f"[{codigo}] {nombre}" if codigo is not None else nombre
+        self.lbl_estado.text = self._envolver(estado, self.ancho + 12)
+        self.lbl_cancion.text = self._envolver(nombre_cancion, self.ancho + 10)
         lineas = lineas or []
         if idx is None or not lineas:
             self.lbl_anterior.text = ""
@@ -93,5 +94,5 @@ class VistaKaraoke:
             self.lbl_actual.text = self._envolver(linea(idx).upper(), self.ancho)
             self.lbl_sig1.text = self._envolver(linea(idx + 1), self.ancho + 6)
             self.lbl_sig2.text = self._envolver(linea(idx + 2), self.ancho + 10)
-        self.lbl_info.text = info
-        self.lbl_mensaje.text = mensaje
+        self.lbl_info.text = self._envolver(info, self.ancho + 12)
+        self.lbl_mensaje.text = self._envolver(mensaje, self.ancho + 10)

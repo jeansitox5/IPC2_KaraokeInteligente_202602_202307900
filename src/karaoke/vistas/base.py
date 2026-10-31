@@ -4,6 +4,8 @@ base.py - Piezas comunes de todas las pantallas (estilos, botones, encabezado).
 Cada pantalla hereda de Pantalla e implementa construir(), que devuelve el
 contenido que se coloca en la ventana principal.
 """
+import textwrap
+
 import toga
 from toga.style import Pack
 from toga.style.pack import CENTER, COLUMN, ROW
@@ -28,7 +30,19 @@ def tam(base):
     return base + 2 if es_movil() else base
 
 
-def etiqueta(texto="", tamano=13, negrita=False, color=None, centrado=False, fondo=None, flex=0):
+def envolver(texto, ancho=32):
+    """Inserta saltos de línea manuales para textos largos en móvil.
+
+    Un Label de Android no ajusta automáticamente un párrafo largo a su
+    ancho disponible: hay que partirlo nosotros con textwrap. Envuelve
+    cada línea por separado para no perder saltos de línea ya existentes.
+    """
+    if not es_movil():
+        return texto
+    return "\n".join(textwrap.fill(linea, width=ancho) if linea else "" for linea in texto.split("\n"))
+
+
+def etiqueta(texto="", tamano=13, negrita=False, color=None, centrado=False, fondo=None, flex=1):
     estilo = Pack(font_size=tam(tamano), flex=flex)
     if negrita:
         estilo.font_weight = "bold"
@@ -64,6 +78,18 @@ def columna(*widgets, gap=8, margin=0):
     return toga.Box(children=list(widgets), style=Pack(direction=COLUMN, gap=gap, margin=margin))
 
 
+def agrupar(*widgets, gap=8):
+    """Varios botones en una fila (escritorio) o apilados uno por fila (móvil).
+
+    En Android, un widget colocado directo en una columna (sin estar dentro
+    de una fila) no se ajusta al ancho de pantalla; varios botones juntos en
+    una sola fila angosta tampoco caben. Apilarlos evita ambos problemas.
+    """
+    if es_movil():
+        return columna(*[fila(w, gap=gap) for w in widgets], gap=gap)
+    return fila(*widgets, gap=gap)
+
+
 def rejilla(widgets, columnas):
     filas = []
     for i in range(0, len(widgets), columnas):
@@ -81,9 +107,9 @@ def entrada(placeholder="", al_confirmar=None, flex=1, valor=""):
     return toga.TextInput(value=valor, placeholder=placeholder, on_confirm=al_confirmar, style=estilo)
 
 
-def area_texto(valor="", placeholder="", alto=220):
+def area_texto(valor="", placeholder="", alto=220, flex=1):
     return toga.MultilineTextInput(
-        value=valor, placeholder=placeholder, style=Pack(height=alto, font_size=tam(12))
+        value=valor, placeholder=placeholder, style=Pack(height=alto, font_size=tam(12), flex=flex)
     )
 
 
@@ -107,9 +133,12 @@ class Pantalla:
     def encabezado(self, titulo=None, volver=True):
         hijos = []
         if volver:
-            hijos.append(boton("← Menú", self.ir_menu, color=GRIS, flex=0, alto=None))
-        hijos.append(etiqueta(titulo or self.titulo, 18, negrita=True, color=AZUL, flex=1))
-        return toga.Box(children=hijos, style=Pack(direction=ROW, gap=12, align_items=CENTER, margin_bottom=8))
+            texto_volver = "←" if es_movil() else "← Menú"
+            hijos.append(boton(texto_volver, self.ir_menu, color=GRIS, flex=0, alto=None))
+        tamano_titulo = 11 if es_movil() else 18
+        hijos.append(etiqueta(titulo or self.titulo, tamano_titulo, negrita=True, color=AZUL, flex=1))
+        gap = 6 if es_movil() else 12
+        return toga.Box(children=hijos, style=Pack(direction=ROW, gap=gap, align_items=CENTER, margin_bottom=8))
 
     def desplazable(self, *widgets, margin=16):
         caja = toga.Box(children=list(widgets), style=Pack(direction=COLUMN, gap=10, margin=margin))

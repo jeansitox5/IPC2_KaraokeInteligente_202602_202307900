@@ -13,7 +13,8 @@ from karaoke import plataforma
 from karaoke.nucleo.importador import importar_texto
 from karaoke.nucleo.texto import preparar_lineas
 from karaoke.vistas.base import (
-    AZUL, GRIS, NARANJA, TEXTO_GRIS, VERDE, Pantalla, area_texto, boton, entrada, etiqueta, fila,
+    AZUL, GRIS, NARANJA, TEXTO_GRIS, VERDE, Pantalla, agrupar, area_texto, boton, entrada, envolver,
+    es_movil, etiqueta, fila,
 )
 
 
@@ -22,15 +23,17 @@ class PantallaAlimentacion(Pantalla):
 
     def construir(self):
         pendientes = len(self.app.temporales.listar_pendientes())
+        texto_t = "(t) Desde archivo de texto" if es_movil() else "(t) Cargar desde archivo de texto"
+        texto_e = "(e) Escribir canción manual" if es_movil() else "(e) Escribir una canción manualmente"
+        texto_v = f"(v) Capturadas ({pendientes})" if es_movil() else f"(v) Revisar canciones capturadas ({pendientes} pendientes)"
         return self.desplazable(
             self.encabezado(),
-            boton("(t) Cargar desde archivo de texto", lambda w: self.app.mostrar(PantallaImportar(self.app))),
-            boton("(e) Escribir una canción manualmente", lambda w: self.app.mostrar(PantallaCaptura(self.app))),
-            boton(f"(v) Revisar canciones capturadas ({pendientes} pendientes)",
-                  lambda w: self.app.mostrar(PantallaRevisar(self.app)), color=VERDE),
-            etiqueta("Formato del archivo: nombre de la canción en la primera línea, su letra "
-                     "debajo (una línea por renglón) y una línea en blanco entre canciones.", 11,
-                     color=TEXTO_GRIS),
+            fila(boton(texto_t, lambda w: self.app.mostrar(PantallaImportar(self.app)))),
+            fila(boton(texto_e, lambda w: self.app.mostrar(PantallaCaptura(self.app)))),
+            fila(boton(texto_v, lambda w: self.app.mostrar(PantallaRevisar(self.app)), color=VERDE)),
+            fila(etiqueta(envolver("Formato del archivo: nombre de la canción en la primera línea, su letra "
+                                   "debajo (una línea por renglón) y una línea en blanco entre canciones."), 11,
+                          color=TEXTO_GRIS)),
         )
 
 
@@ -43,11 +46,11 @@ class PantallaImportar(Pantalla):
         self.pegado = area_texto(placeholder="…o pegue aquí el texto con el formato del archivo")
         return self.desplazable(
             self.encabezado(),
-            fila(boton("Elegir archivo…", self._elegir),
-                 boton("Cargar ejemplo incluido", self._ejemplo, color=GRIS)),
-            self.pegado,
-            boton("Importar el texto pegado", self._pegado, color=VERDE),
-            self.resultado,
+            agrupar(boton("Elegir archivo…", self._elegir),
+                    boton("Cargar ejemplo incluido", self._ejemplo, color=GRIS)),
+            fila(self.pegado),
+            fila(boton("Importar el texto pegado", self._pegado, color=VERDE)),
+            fila(self.resultado),
         )
 
     async def _elegir(self, widget):
@@ -73,9 +76,10 @@ class PantallaImportar(Pantalla):
             return
         reporte = importar_texto(texto, self.app.canciones, self.app.cfg["MAX_CARACTERES_LINEA"])
         self.app.recargar_buscador()
-        self.resultado.text = prefijo + reporte.resumen()
+        mensaje = prefijo + reporte.resumen()
         if reporte.cargadas:
-            self.resultado.text += "\n" + "\n".join(f"  [{c}] {n}" for c, n in reporte.cargadas)
+            mensaje += "\n" + "\n".join(f"  [{c}] {n}" for c, n in reporte.cargadas)
+        self.resultado.text = envolver(mensaje)
 
 
 # ====================================================================== (e)
@@ -91,10 +95,10 @@ class PantallaCaptura(Pantalla):
         self.resultado = etiqueta("", 12, color=VERDE)
         return self.desplazable(
             self.encabezado(),
-            self.nombre, self.artista, self.linea,
-            fila(boton("Agregar línea", self._agregar), boton("Terminar y guardar", self._guardar, color=VERDE)),
-            etiqueta("Líneas ingresadas:", 11, color=TEXTO_GRIS),
-            self.lista, self.resultado,
+            fila(self.nombre), fila(self.artista), fila(self.linea),
+            agrupar(boton("Agregar línea", self._agregar), boton("Terminar y guardar", self._guardar, color=VERDE)),
+            fila(etiqueta("Líneas ingresadas:", 11, color=TEXTO_GRIS)),
+            fila(self.lista), fila(self.resultado),
         )
 
     def _agregar(self, widget):
@@ -144,13 +148,16 @@ class PantallaRevisar(Pantalla):
         self.cuerpo.clear()
         pendientes = self.app.temporales.listar_pendientes()
         if not pendientes:
-            self.cuerpo.add(etiqueta("No hay canciones capturadas pendientes de revisar.", 12))
+            self.cuerpo.add(fila(etiqueta("No hay canciones capturadas pendientes de revisar.", 12)))
             return
-        self.cuerpo.add(etiqueta("Letras capturadas por el modo automático. Corríjalas, póngales "
-                                 "nombre y páselas a la base permanente.", 11, color=TEXTO_GRIS))
+        self.cuerpo.add(fila(etiqueta(envolver("Letras capturadas por el modo automático. Corríjalas, póngales "
+                                               "nombre y páselas a la base permanente."), 11, color=TEXTO_GRIS)))
+        limite = 21 if es_movil() else 90
         for p in pendientes:
-            texto = f"#{p['id_tmp']} · {p['nombre_provisional']} ({p['num_lineas']} líneas, {p['fecha_captura']})"
-            self.cuerpo.add(boton(texto, self._abrir(p["id_tmp"]), color=AZUL))
+            texto = f"#{p['id_tmp']} · {p['nombre_provisional']} ({p['num_lineas']} líneas)"
+            if len(texto) > limite:
+                texto = texto[:limite - 1] + "…"
+            self.cuerpo.add(fila(boton(texto, self._abrir(p["id_tmp"]), color=AZUL)))
 
     def _abrir(self, id_tmp):
         return lambda widget: self._editor(id_tmp)
@@ -161,11 +168,11 @@ class PantallaRevisar(Pantalla):
         self.id_tmp = id_tmp
         self.nombre = entrada("Nombre real de la canción", valor=registro["nombre_provisional"])
         self.texto = area_texto("\n".join(self.app.temporales.lineas(id_tmp)), alto=300)
-        self.cuerpo.add(etiqueta("Nombre:", 11, color=TEXTO_GRIS))
-        self.cuerpo.add(self.nombre)
-        self.cuerpo.add(etiqueta("Letra (una línea por renglón, corrija lo que haga falta):", 11, color=TEXTO_GRIS))
-        self.cuerpo.add(self.texto)
-        self.cuerpo.add(fila(
+        self.cuerpo.add(fila(etiqueta("Nombre:", 11, color=TEXTO_GRIS)))
+        self.cuerpo.add(fila(self.nombre))
+        self.cuerpo.add(fila(etiqueta("Letra (una línea por renglón, corrija lo que haga falta):", 11, color=TEXTO_GRIS)))
+        self.cuerpo.add(fila(self.texto))
+        self.cuerpo.add(agrupar(
             boton("Guardar en la base", self._promover, color=VERDE),
             boton("Descartar", self._descartar, color=NARANJA),
             boton("Volver", lambda w: self._lista(), color=GRIS),

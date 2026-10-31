@@ -15,7 +15,8 @@ from toga.style.pack import COLUMN
 from karaoke import plataforma
 from karaoke.automatico.sesion import SesionAutomatica
 from karaoke.vistas.base import (
-    AMARILLO, AZUL, GRIS, NARANJA, TEXTO_GRIS, VERDE, Pantalla, boton, entrada, etiqueta, fila,
+    AMARILLO, AZUL, GRIS, NARANJA, TEXTO_GRIS, VERDE, Pantalla, agrupar, boton, entrada, envolver,
+    etiqueta, fila,
 )
 from karaoke.vistas.karaoke import VistaKaraoke
 
@@ -32,13 +33,13 @@ class PantallaModoAutomatico(Pantalla):
     def construir(self):
         self.cuerpo = toga.Box(style=Pack(direction=COLUMN, gap=10))
         self.lbl_motor = etiqueta("Preparando el motor de voz…", 12, color=TEXTO_GRIS)
-        self.cuerpo.add(self.lbl_motor)
+        self.cuerpo.add(fila(self.lbl_motor))
         return self.desplazable(self.encabezado(), self.cuerpo)
 
     async def al_mostrar(self):
         motor = await self.app.crear_motor(self.motor_forzado)
         if motor is None:
-            self.lbl_motor.text = "Se canceló la selección del archivo de audio."
+            self.lbl_motor.text = envolver("Se canceló la selección del archivo de audio.")
             return
         ok, mensaje = motor.disponible()
         if not ok:
@@ -49,7 +50,7 @@ class PantallaModoAutomatico(Pantalla):
                                    "Ajustes > Aplicaciones > Karaoke Inteligente > Permisos.")
             return
         self.motor = motor
-        self.lbl_motor.text = f"Motor de voz: {motor.nombre} — {mensaje}"
+        self.lbl_motor.text = envolver(f"Motor de voz: {motor.nombre} — {mensaje}")
         self._construir_vista()
         self.sesion = SesionAutomatica(self.app, motor)
         self.sesion.iniciar()
@@ -57,9 +58,9 @@ class PantallaModoAutomatico(Pantalla):
         asyncio.ensure_future(self._bucle())
 
     def _mostrar_problema(self, mensaje):
-        self.lbl_motor.text = mensaje
+        self.lbl_motor.text = envolver(mensaje)
         self.lbl_motor.style.color = NARANJA
-        self.cuerpo.add(fila(
+        self.cuerpo.add(agrupar(
             boton("Usar modo simulado", lambda w: self.app.mostrar(PantallaModoAutomatico(self.app, "simulado")), color=GRIS),
             boton("Ir al modo manual", self._a_manual_btn, color=VERDE),
             boton("Diagnóstico", self._diagnostico, color=AZUL),
@@ -84,10 +85,10 @@ class PantallaModoAutomatico(Pantalla):
         extras = []
         if self.motor.nombre == "simulado":
             self.simulado = entrada("Escriba lo que 'se escuchó' y presione Enter", al_confirmar=self._simular)
-            extras = [etiqueta("Modo simulado (pruebas sin micrófono):", 11, color=TEXTO_GRIS),
+            extras = [fila(etiqueta(envolver("Modo simulado (pruebas sin micrófono):"), 11, color=TEXTO_GRIS)),
                       fila(self.simulado, boton("Enviar", self._simular, flex=0))]
         self.lbl_oido = etiqueta("", 10, color=TEXTO_GRIS)
-        extras.append(self.lbl_oido)
+        extras.append(fila(self.lbl_oido))
         self.vista = VistaKaraoke(self.app, acciones, extras)
         self.cuerpo.add(self.vista.widget)
 
@@ -128,7 +129,7 @@ class PantallaModoAutomatico(Pantalla):
         mensaje = self.sesion.mensaje or getattr(self.motor, "mensaje_estado", "")
         info += f" · cantadas: {self.sesion.cantadas}"
         self.vista.mostrar(nombre, codigo, lineas, idx, f"AUTOMÁTICO · {e['estado']}", info, mensaje)
-        self.lbl_oido.text = f"Oído: {self.sesion.ultimo_texto[-90:]}" if self.sesion.ultimo_texto else ""
+        self.lbl_oido.text = envolver(f"Oído: {self.sesion.ultimo_texto[-90:]}") if self.sesion.ultimo_texto else ""
 
     # ------------------------------------------------------------ salir
     def al_salir(self):

@@ -10,7 +10,7 @@ import toga
 from toga.style import Pack
 
 from karaoke.vistas.base import (
-    AZUL, GRIS, NARANJA, TEXTO_GRIS, VERDE, Pantalla, boton, es_movil, etiqueta, rejilla,
+    AZUL, GRIS, NARANJA, TEXTO_GRIS, VERDE, Pantalla, boton, envolver, es_movil, etiqueta, rejilla,
 )
 
 
@@ -56,7 +56,7 @@ class PantallaInicio(Pantalla):
 
         hijos = [
             etiqueta("Karaoke Inteligente", 24, negrita=True, color=AZUL),
-            etiqueta(resumen, 11, color=TEXTO_GRIS),
+            etiqueta(envolver(resumen), 11, color=TEXTO_GRIS),
             rejilla(botones, 1 if es_movil() else 2),
         ]
         if not es_movil():
@@ -66,7 +66,7 @@ class PantallaInicio(Pantalla):
                 style=Pack(margin_top=6),
             )
             hijos.append(self.tecla)
-        hijos.append(etiqueta(self.app.mensaje_bd, 10, color=TEXTO_GRIS))
+        hijos.append(etiqueta(envolver(self.app.mensaje_bd), 10, color=TEXTO_GRIS))
         hijos.append(etiqueta("IPC2 · USAC · 202307900", 9, color=TEXTO_GRIS))
         return self.desplazable(*hijos)
 

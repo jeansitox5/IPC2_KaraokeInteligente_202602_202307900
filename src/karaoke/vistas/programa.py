@@ -1,6 +1,8 @@
 """
 programa.py (vista) - Opción (p): alimentar el programa tentativo del cantante.
 """
+import textwrap
+
 import toga
 from toga.style import Pack
 from toga.style.pack import COLUMN
@@ -8,7 +10,8 @@ from toga.style.pack import COLUMN
 from karaoke import plataforma
 from karaoke.nucleo.programa import cargar_programa
 from karaoke.vistas.base import (
-    AZUL, GRIS, NARANJA, TEXTO_GRIS, VERDE, Pantalla, area_texto, boton, etiqueta, fila,
+    AZUL, GRIS, NARANJA, TEXTO_GRIS, VERDE, Pantalla, agrupar, area_texto, boton, envolver, es_movil,
+    etiqueta, fila,
 )
 
 SIMBOLOS = {"pendiente": "◻", "cantada": "✔", "saltada": "↷", "no_encontrada": "✖"}
@@ -24,35 +27,44 @@ class PantallaPrograma(Pantalla):
         self._llenar()
         return self.desplazable(
             self.encabezado(),
-            etiqueta("Archivo PROGRAMA: el nombre de cada canción en el orden en que se cantará. "
-                     "El orden es una sugerencia: en los modos manual y automático se puede saltar, "
-                     "repetir o cantar otra.", 11, color=TEXTO_GRIS),
-            fila(boton("Elegir archivo PROGRAMA…", self._elegir),
-                 boton("Cargar ejemplo", self._ejemplo, color=GRIS)),
-            self.pegado,
-            boton("Usar el texto pegado", self._pegado, color=VERDE),
-            self.resultado,
-            etiqueta("Programa actual:", 13, negrita=True, color=AZUL),
+            fila(etiqueta(self._explicacion(), 11, color=TEXTO_GRIS)),
+            agrupar(boton("Elegir archivo PROGRAMA…", self._elegir),
+                    boton("Cargar ejemplo", self._ejemplo, color=GRIS)),
+            fila(self.pegado),
+            fila(boton("Usar el texto pegado", self._pegado, color=VERDE)),
+            fila(self.resultado),
+            fila(etiqueta("Programa actual:", 13, negrita=True, color=AZUL)),
             self.lista,
-            fila(boton("Reiniciar estados", self._reiniciar, color=GRIS),
-                 boton("Vaciar programa", self._vaciar, color=NARANJA)),
+            agrupar(boton("Reiniciar estados", self._reiniciar, color=GRIS),
+                    boton("Vaciar programa", self._vaciar, color=NARANJA)),
         )
+
+    def _explicacion(self):
+        texto = ("Archivo PROGRAMA: el nombre de cada canción en el orden en que se cantará. "
+                 "El orden es una sugerencia: en los modos manual y automático se puede saltar, "
+                 "repetir o cantar otra.")
+        return textwrap.fill(texto, width=32) if es_movil() else texto
 
     def _llenar(self):
         self.lista.clear()
         filas = self.app.programa.listar()
         if not filas:
-            self.lista.add(etiqueta("(no hay programa cargado)", 12, color=TEXTO_GRIS))
+            self.lista.add(fila(etiqueta("(no hay programa cargado)", 12, color=TEXTO_GRIS)))
+        limite = 20 if es_movil() else 120
         for f in filas:
             nombre = f["nombre_cancion"] or f["nombre_texto"]
             codigo = f"[{f['codigo']}] " if f["codigo"] else ""
-            self.lista.add(etiqueta(f"{f['posicion']}. {SIMBOLOS[f['estado']]} {codigo}{nombre} — {f['estado']}", 12))
+            texto = f"{f['posicion']}. {SIMBOLOS[f['estado']]} {codigo}{nombre} — {f['estado']}"
+            if len(texto) > limite:
+                texto = texto[:limite - 1] + "…"
+            self.lista.add(fila(etiqueta(texto, 12)))
 
     def _cargar(self, texto, origen):
         total, encontradas, faltan = cargar_programa(texto, self.app.programa, self.app.canciones)
-        self.resultado.text = f"{origen}: {total} canciones, {encontradas} encontradas en la base."
+        mensaje = f"{origen}: {total} canciones, {encontradas} encontradas en la base."
         if faltan:
-            self.resultado.text += "\nNo encontradas (cárguelas con (f) Alimentación): " + ", ".join(faltan)
+            mensaje += "\nNo encontradas (cárguelas con (f) Alimentación): " + ", ".join(faltan)
+        self.resultado.text = envolver(mensaje)
         self._llenar()
 
     async def _elegir(self, widget):

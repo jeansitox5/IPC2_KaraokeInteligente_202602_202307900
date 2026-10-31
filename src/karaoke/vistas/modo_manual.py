@@ -15,7 +15,8 @@ from toga.style import Pack
 from toga.style.pack import COLUMN
 
 from karaoke.vistas.base import (
-    AMARILLO, AZUL, GRIS, NARANJA, TEXTO_GRIS, VERDE, Pantalla, boton, entrada, es_movil, etiqueta, fila,
+    AMARILLO, AZUL, GRIS, NARANJA, TEXTO_GRIS, VERDE, Pantalla, agrupar, boton, entrada, envolver,
+    es_movil, etiqueta, fila,
 )
 from karaoke.vistas.karaoke import VistaKaraoke
 
@@ -46,9 +47,9 @@ class PantallaModoManual(Pantalla):
         self.cuerpo.clear()
         sig = self.app.programa.siguiente_pendiente()
         if sig:
-            self.cuerpo.add(etiqueta(f"Siguiente del programa: [{sig['codigo']}] {sig['nombre_cancion']}",
-                                     13, negrita=True, color=AZUL))
-            self.cuerpo.add(fila(
+            self.cuerpo.add(fila(etiqueta(envolver(f"Siguiente del programa: [{sig['codigo']}] {sig['nombre_cancion']}"),
+                                          13, negrita=True, color=AZUL)))
+            self.cuerpo.add(agrupar(
                 boton("Cantar esta", lambda w: self._empezar(sig["codigo"], 0), color=VERDE),
                 boton("Omitir del programa", lambda w: self._omitir(sig["posicion"]), color=GRIS),
             ))
@@ -57,10 +58,10 @@ class PantallaModoManual(Pantalla):
         self.resultados = toga.Box(style=Pack(direction=COLUMN, gap=6))
         self.cuerpo.add(self.resultados)
         if self.mensaje:
-            self.cuerpo.add(etiqueta(self.mensaje, 12, color=VERDE))
+            self.cuerpo.add(fila(etiqueta(self.mensaje, 12, color=VERDE)))
         if self.ultima is not None:
             self.cuerpo.add(fila(boton("(r) Repetir la canción anterior", lambda w: self._empezar(self.ultima, 0), color=AZUL)))
-        self.cuerpo.add(etiqueta(f"Canciones cantadas en esta sesión: {self.cantadas}", 11, color=TEXTO_GRIS))
+        self.cuerpo.add(fila(etiqueta(f"Canciones cantadas en esta sesión: {self.cantadas}", 11, color=TEXTO_GRIS)))
         self.cuerpo.add(fila(boton("(f) Finalizar la sesión", self._finalizar_btn, color=NARANJA)))
 
     def _omitir(self, posicion):
@@ -74,11 +75,11 @@ class PantallaModoManual(Pantalla):
             return
         coincidencias = self.app.buscador.buscar_fragmento(texto)
         if not coincidencias:
-            self.resultados.add(etiqueta("No se encontró ninguna canción con esas palabras.", 12, color=NARANJA))
+            self.resultados.add(fila(etiqueta("No se encontró ninguna canción con esas palabras.", 12, color=NARANJA)))
             return
         if len(coincidencias) == 1 or coincidencias[0].puntaje - coincidencias[1].puntaje >= 0.3:
-            self.resultados.add(etiqueta("Coincidencia clara:", 11, color=TEXTO_GRIS))
-        limite = 26 if es_movil() else 90
+            self.resultados.add(fila(etiqueta("Coincidencia clara:", 11, color=TEXTO_GRIS)))
+        limite = 21 if es_movil() else 90
         for c in coincidencias:
             texto_boton = f"[{c.codigo}] {c.nombre} — línea {c.linea + 1}: {c.texto}"
             if len(texto_boton) > limite:

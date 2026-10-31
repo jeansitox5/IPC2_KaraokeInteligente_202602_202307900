@@ -6,13 +6,15 @@ consultas.py - Opciones (w), (x), (u) y (b).
 (u) corregir la letra por nombre o código
 (b) borrar canción y su letra por nombre o código, con confirmación
 """
+import textwrap
+
 import toga
 from toga.style import Pack
 from toga.style.pack import COLUMN
 
 from karaoke.vistas.base import (
     AZUL, GRIS, NARANJA, TEXTO_GRIS, VERDE, Paginador, Pantalla, area_texto, boton, entrada,
-    etiqueta, fila,
+    envolver, es_movil, etiqueta, fila,
 )
 
 
@@ -38,10 +40,13 @@ class PantallaListado(Pantalla):
         self.lista.clear()
         filas = self.app.canciones.listar(self.pag.desplazamiento, self.pag.por_pagina)
         if not filas:
-            self.lista.add(etiqueta("La base de datos no tiene canciones. Use (f) Alimentación.", 12, color=NARANJA))
+            self.lista.add(fila(etiqueta(envolver("La base de datos no tiene canciones. Use (f) Alimentación."), 12, color=NARANJA)))
+        limite = 21 if es_movil() else 90
         for f in filas:
-            texto = f"[{f['codigo']}]  {f['nombre_cancion']}  ·  {f['num_lineas']} líneas"
-            self.lista.add(boton(texto, self._ver(f["codigo"]), color=AZUL))
+            texto = f"[{f['codigo']}] {f['nombre_cancion']} · {f['num_lineas']} líneas"
+            if len(texto) > limite:
+                texto = texto[:limite - 1] + "…"
+            self.lista.add(fila(boton(texto, self._ver(f["codigo"]), color=AZUL)))
         self.lbl_pag.text = f"{self.pag.texto()} · {self.pag.total} canciones en total"
 
     def _ver(self, codigo):
@@ -76,7 +81,7 @@ class PantallaVerLetra(Pantalla):
         return self.desplazable(
             self.encabezado(),
             fila(self.entrada, boton("Ver", self._ver, flex=0)),
-            self.lbl_nombre, self.lbl_letra, self.lbl_pag,
+            fila(self.lbl_nombre), fila(self.lbl_letra), fila(self.lbl_pag),
             fila(boton("◀ Anterior", self._anterior, color=GRIS), boton("Siguiente ▶", self._siguiente, color=GRIS)),
         )
 
@@ -102,7 +107,11 @@ class PantallaVerLetra(Pantalla):
             return
         ini = self.pag.desplazamiento
         grupo = self.lineas[ini:ini + self.pag.por_pagina]
-        self.lbl_letra.text = "\n".join(f"{ini + i + 1:>3}. {l}" for i, l in enumerate(grupo))
+        ancho = 26 if es_movil() else 200
+        self.lbl_letra.text = "\n".join(
+            textwrap.fill(f"{ini + i + 1:>3}. {l}", width=ancho, subsequent_indent="     ")
+            for i, l in enumerate(grupo)
+        )
         self.lbl_pag.text = f"{self.pag.texto()} · {len(self.lineas)} líneas"
 
     def _anterior(self, w):
@@ -133,13 +142,17 @@ class _PantallaElegirCancion(Pantalla):
         self.cuerpo.clear()
         encontradas = self.app.canciones.resolver(self.entrada.value or "")
         if not encontradas:
-            self.cuerpo.add(etiqueta("No se encontró ninguna canción con ese nombre o código.", 12, color=NARANJA))
+            self.cuerpo.add(fila(etiqueta(envolver("No se encontró ninguna canción con ese nombre o código."), 12, color=NARANJA)))
         elif len(encontradas) == 1:
             self.elegida(encontradas[0])
         else:
-            self.cuerpo.add(etiqueta("Hay varias coincidencias, elija una:", 11, color=TEXTO_GRIS))
+            self.cuerpo.add(fila(etiqueta("Hay varias coincidencias, elija una:", 11, color=TEXTO_GRIS)))
+            limite = 21 if es_movil() else 90
             for c in encontradas[:20]:
-                self.cuerpo.add(boton(f"[{c['codigo']}] {c['nombre_cancion']}", self._elegir(c), color=AZUL))
+                texto = f"[{c['codigo']}] {c['nombre_cancion']}"
+                if len(texto) > limite:
+                    texto = texto[:limite - 1] + "…"
+                self.cuerpo.add(fila(boton(texto, self._elegir(c), color=AZUL)))
 
     def _elegir(self, cancion):
         def manejador(widget):
@@ -159,11 +172,11 @@ class PantallaCorregir(_PantallaElegirCancion):
         self.codigo = cancion["codigo"]
         self.nombre = entrada("Nombre", valor=cancion["nombre_cancion"])
         self.texto = area_texto("\n".join(self.app.canciones.lineas(self.codigo)), alto=320)
-        self.cuerpo.add(etiqueta(f"Corrigiendo la canción con código {self.codigo}. Puede editar, "
-                                 "agregar o borrar renglones (un renglón = una línea).", 11, color=TEXTO_GRIS))
-        self.cuerpo.add(self.nombre)
-        self.cuerpo.add(self.texto)
-        self.cuerpo.add(boton("Guardar cambios", self._guardar, color=VERDE))
+        self.cuerpo.add(fila(etiqueta(envolver(f"Corrigiendo la canción con código {self.codigo}. Puede editar, "
+                                               "agregar o borrar renglones (un renglón = una línea)."), 11, color=TEXTO_GRIS)))
+        self.cuerpo.add(fila(self.nombre))
+        self.cuerpo.add(fila(self.texto))
+        self.cuerpo.add(fila(boton("Guardar cambios", self._guardar, color=VERDE)))
 
     async def _guardar(self, widget):
         from karaoke.nucleo.texto import preparar_lineas
@@ -189,8 +202,8 @@ class PantallaBorrar(_PantallaElegirCancion):
     def elegida(self, cancion):
         self.cancion = cancion
         n = len(self.app.canciones.lineas(cancion["codigo"]))
-        self.cuerpo.add(etiqueta(f"[{cancion['codigo']}] {cancion['nombre_cancion']} · {n} líneas", 14, negrita=True))
-        self.cuerpo.add(boton("Borrar esta canción y su letra", self._borrar, color=NARANJA))
+        self.cuerpo.add(fila(etiqueta(f"[{cancion['codigo']}] {cancion['nombre_cancion']} · {n} líneas", 14, negrita=True)))
+        self.cuerpo.add(fila(boton("Borrar esta canción y su letra", self._borrar, color=NARANJA)))
 
     async def _borrar(self, widget):
         c = self.cancion
@@ -201,9 +214,9 @@ class PantallaBorrar(_PantallaElegirCancion):
         )
         if not seguro:
             self.cuerpo.clear()
-            self.cuerpo.add(etiqueta("No se borró nada.", 12, color=VERDE))
+            self.cuerpo.add(fila(etiqueta("No se borró nada.", 12, color=VERDE)))
             return
         self.app.canciones.borrar(c["codigo"])
         self.app.recargar_buscador()
         self.cuerpo.clear()
-        self.cuerpo.add(etiqueta(f"Se borró «{c['nombre_cancion']}» y su letra.", 12, color=VERDE))
+        self.cuerpo.add(fila(etiqueta(f"Se borró «{c['nombre_cancion']}» y su letra.", 12, color=VERDE)))
