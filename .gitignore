@@ -7,7 +7,7 @@ __pycache__/
 .venv/
 venv/
 
-# Generado por Briefcase (instaladores se publican en Releases)
+# Generado por Briefcase (los instaladores se publican en Releases)
 build/
 dist/
 logs/
@@ -18,7 +18,6 @@ logs/
 
 # Whisper (lo descarga scripts/descargar_whisper.ps1)
 src/karaoke/resources/whisper/
-*.bin
 
 # Audio temporal
 *.wav

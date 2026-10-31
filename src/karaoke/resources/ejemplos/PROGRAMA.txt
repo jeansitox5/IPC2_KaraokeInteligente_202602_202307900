@@ -1,0 +1,5 @@
+# Programa tentativo del cantante (un nombre por línea, en orden)
+Lluvia de octubre
+Camino a Chimaltenango
+Código y madrugada
+Una canción que todavía no está en la base

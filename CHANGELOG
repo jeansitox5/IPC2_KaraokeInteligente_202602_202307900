@@ -1,5 +1,7 @@
-# Karaoke Inteligente Release Notes
+# Karaoke Inteligente - historial de versiones
 
-## 0.0.1 (29 Oct 2026)
+## 1.0.0
+- Entrega final: instaladores .msi (Windows) y .apk (Android), manuales.
 
-* Initial release
+## 0.1.0
+- Esqueleto de la aplicación con Briefcase y Toga.
