@@ -16,7 +16,7 @@ from toga.style import Pack
 from toga.style.pack import COLUMN
 
 from karaoke.vistas.base import (
-    AZUL, CLARO, TEXTO_GRIS, VERDE, boton, es_movil, etiqueta, rejilla, tam,
+    AZUL, CLARO, TEXTO_GRIS, VERDE, boton, es_movil, etiqueta, fila, rejilla, tam,
 )
 
 
@@ -26,29 +26,30 @@ class VistaKaraoke:
         self.app = app
         self.acciones = {letra: funcion for letra, _, funcion, _ in acciones}
         cfg = app.cfg
-        self.ancho = 26 if es_movil() else max(30, min(int(cfg["CARACTERES_PROMEDIO_LINEA"] * 0.7), 70))
+        self.ancho = 15 if es_movil() else max(30, min(int(cfg["CARACTERES_PROMEDIO_LINEA"] * 0.7), 70))
 
-        self.lbl_estado = etiqueta("", 11, negrita=True, color=VERDE)
-        self.lbl_cancion = etiqueta("", 13, negrita=True, color=AZUL)
-        self.lbl_anterior = etiqueta("", 14, color=TEXTO_GRIS)
+        self.lbl_estado = etiqueta("", 11, negrita=True, color=VERDE, flex=1)
+        self.lbl_cancion = etiqueta("", 13, negrita=True, color=AZUL, flex=1)
+        self.lbl_anterior = etiqueta("", 14, color=TEXTO_GRIS, flex=1)
         self.lbl_actual = toga.Label(
             "",
             style=Pack(font_size=tam(24), font_weight="bold", color=AZUL,
-                       background_color=CLARO, margin=(10, 8)),
+                       background_color=CLARO, margin=(10, 8), flex=1),
         )
-        self.lbl_sig1 = etiqueta("", 16)
-        self.lbl_sig2 = etiqueta("", 14, color=TEXTO_GRIS)
-        self.lbl_info = etiqueta("", 10, color=TEXTO_GRIS)
-        self.lbl_mensaje = etiqueta("", 11, color=AZUL)
+        self.lbl_sig1 = etiqueta("", 16, flex=1)
+        self.lbl_sig2 = etiqueta("", 14, color=TEXTO_GRIS, flex=1)
+        self.lbl_info = etiqueta("", 10, color=TEXTO_GRIS, flex=1)
+        self.lbl_mensaje = etiqueta("", 11, color=AZUL, flex=1)
 
         botones = [
             boton(f"({letra}) {texto}", self._presionar(letra), color=color)
             for letra, texto, _, color in acciones
         ]
         hijos = [
-            self.lbl_estado, self.lbl_cancion, self.lbl_anterior, self.lbl_actual,
-            self.lbl_sig1, self.lbl_sig2, self.lbl_info, self.lbl_mensaje,
-            rejilla(botones, 3 if es_movil() else 4),
+            fila(self.lbl_estado), fila(self.lbl_cancion), fila(self.lbl_anterior),
+            fila(self.lbl_actual), fila(self.lbl_sig1), fila(self.lbl_sig2),
+            fila(self.lbl_info), fila(self.lbl_mensaje),
+            rejilla(botones, 1 if es_movil() else 4),
         ]
         if not es_movil():
             self.tecla = toga.TextInput(

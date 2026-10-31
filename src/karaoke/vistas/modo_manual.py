@@ -15,7 +15,7 @@ from toga.style import Pack
 from toga.style.pack import COLUMN
 
 from karaoke.vistas.base import (
-    AMARILLO, AZUL, GRIS, NARANJA, TEXTO_GRIS, VERDE, Pantalla, boton, entrada, etiqueta, fila,
+    AMARILLO, AZUL, GRIS, NARANJA, TEXTO_GRIS, VERDE, Pantalla, boton, entrada, es_movil, etiqueta, fila,
 )
 from karaoke.vistas.karaoke import VistaKaraoke
 
@@ -59,9 +59,9 @@ class PantallaModoManual(Pantalla):
         if self.mensaje:
             self.cuerpo.add(etiqueta(self.mensaje, 12, color=VERDE))
         if self.ultima is not None:
-            self.cuerpo.add(boton("(r) Repetir la canción anterior", lambda w: self._empezar(self.ultima, 0), color=AZUL))
+            self.cuerpo.add(fila(boton("(r) Repetir la canción anterior", lambda w: self._empezar(self.ultima, 0), color=AZUL)))
         self.cuerpo.add(etiqueta(f"Canciones cantadas en esta sesión: {self.cantadas}", 11, color=TEXTO_GRIS))
-        self.cuerpo.add(boton("(f) Finalizar la sesión", self._finalizar_btn, color=NARANJA))
+        self.cuerpo.add(fila(boton("(f) Finalizar la sesión", self._finalizar_btn, color=NARANJA)))
 
     def _omitir(self, posicion):
         self.app.programa.marcar(posicion, "saltada")
@@ -78,9 +78,12 @@ class PantallaModoManual(Pantalla):
             return
         if len(coincidencias) == 1 or coincidencias[0].puntaje - coincidencias[1].puntaje >= 0.3:
             self.resultados.add(etiqueta("Coincidencia clara:", 11, color=TEXTO_GRIS))
+        limite = 26 if es_movil() else 90
         for c in coincidencias:
-            texto_boton = f"[{c.codigo}] {c.nombre} — línea {c.linea + 1}: {c.texto[:45]}"
-            self.resultados.add(boton(texto_boton, self._elegir(c.codigo, c.linea), color=AZUL))
+            texto_boton = f"[{c.codigo}] {c.nombre} — línea {c.linea + 1}: {c.texto}"
+            if len(texto_boton) > limite:
+                texto_boton = texto_boton[:limite - 1] + "…"
+            self.resultados.add(fila(boton(texto_boton, self._elegir(c.codigo, c.linea), color=AZUL)))
 
     def _elegir(self, codigo, linea):
         return lambda widget: self._empezar(codigo, linea)
