@@ -1,62 +1,90 @@
 """
-Karaoke Inteligente - IPC2, USAC
-Punto de entrada de la aplicación Toga.
+Karaoke Inteligente - IPC2, USAC (202307900)
 
-Fase 0: esqueleto que comprueba que Toga y Briefcase funcionan.
-Muestra la plataforma detectada para confirmar que el mismo código
-corre en Windows y, en la Fase 0-B, en Android.
+Punto de entrada de la aplicación Toga. Al iniciar:
+  1. Detecta/crea la base CANCIONES (carpeta de datos de la app).
+  2. Carga la configuración y las letras en el buscador.
+  3. Muestra el menú principal.
+
+La App también funciona como "contexto": las pantallas y la lógica acceden a
+los repositorios, al buscador y a la configuración a través de ella.
 """
-import platform
-
 import toga
-from toga.style import Pack
-from toga.style.pack import CENTER, COLUMN
+
+from karaoke import plataforma
+from karaoke.config import Configuracion
+from karaoke.datos.base_datos import BaseDatos
+from karaoke.datos.canciones_repo import CancionesRepo
+from karaoke.datos.config_repo import ConfigRepo
+from karaoke.datos.programa_repo import ProgramaRepo
+from karaoke.datos.temporales_repo import TemporalesRepo
+from karaoke.nucleo.buscador import Buscador
 
 
 class KaraokeInteligente(toga.App):
     """Aplicación principal del Karaoke Inteligente."""
 
     def startup(self):
-        """Toga llama a este método una sola vez, al iniciar la app."""
-        titulo = toga.Label(
-            "Karaoke Inteligente",
-            style=Pack(font_size=24, font_weight="bold", text_align=CENTER),
-        )
-        # self.version viene de pyproject.toml: una sola fuente de verdad.
-        subtitulo = toga.Label(
-            f"Versión {self.version} · esqueleto (Fase 0)",
-            style=Pack(font_size=12, text_align=CENTER),
-        )
-        info = toga.Label(
-            f"Plataforma: {toga.platform.current_platform} · "
-            f"Python {platform.python_version()}",
-            style=Pack(font_size=11, text_align=CENTER),
-        )
-        boton = toga.Button(
-            "Probar evento",
-            on_press=self.al_presionar_probar,
-            style=Pack(margin_top=16, height=48, width=220),
-        )
+        # ---- datos
+        self.db = BaseDatos(self.paths.data)
+        self.mensaje_bd = self.db.mensaje
+        self.canciones = CancionesRepo(self.db)
+        self.programa = ProgramaRepo(self.db)
+        self.temporales = TemporalesRepo(self.db)
+        self.cfg = Configuracion(ConfigRepo(self.db))
+        self.buscador = Buscador()
+        self.recargar_buscador()
 
-        contenido = toga.Box(
-            children=[titulo, subtitulo, info, boton],
-            style=Pack(direction=COLUMN, margin=24, gap=8, align_items=CENTER),
-        )
+        # ---- ventana
+        self.pantalla = None
+        self.main_window = toga.MainWindow(title=self.formal_name, size=(1000, 760))
+        from karaoke.vistas.inicio import PantallaInicio
 
-        self.main_window = toga.MainWindow(title=self.formal_name)
-        self.main_window.content = contenido
+        self.mostrar(PantallaInicio(self))
         self.main_window.show()
 
-    async def al_presionar_probar(self, widget):
-        """Manejador del botón: confirma que los eventos funcionan."""
-        await self.main_window.dialog(
-            toga.InfoDialog(
-                "Funciona",
-                "Los eventos de Toga responden correctamente.",
+    # ------------------------------------------------------------ navegación
+    def mostrar(self, pantalla):
+        """Cambia el contenido de la ventana por otra pantalla."""
+        if self.pantalla is not None:
+            self.pantalla.al_salir()
+        self.pantalla = pantalla
+        self.main_window.content = pantalla.construir()
+        self.loop.create_task(pantalla.al_mostrar())
+
+    def recargar_buscador(self):
+        self.buscador.cargar(self.canciones.todas_con_lineas())
+
+    # ------------------------------------------------------------ motor de voz
+    async def crear_motor(self, forzado=None):
+        """Crea el motor de voz según la configuración (patrón Estrategia)."""
+        from karaoke.audio.motor_voz import MotorSimulado
+
+        tipo = forzado or self.cfg["MOTOR_VOZ"]
+        if tipo == "auto":
+            tipo = "android" if plataforma.es_android() else "whisper"
+        if tipo == "simulado":
+            return MotorSimulado()
+        if tipo == "android":
+            from karaoke.audio.voz_android import MotorAndroid
+            return MotorAndroid(self, self.cfg)
+        ruta_wav = None
+        if tipo == "archivo":
+            ruta_wav = await self.main_window.dialog(
+                toga.OpenFileDialog("Elegir grabación WAV", file_types=["wav"])
             )
-        )
+            if not ruta_wav:
+                return None
+        from karaoke.audio.whisper_win import MotorWhisper
+        return MotorWhisper(self.cfg, self.paths.app / "resources" / "whisper", ruta_wav)
+
+    # ------------------------------------------------------------ salida
+    def on_exit(self):
+        if self.pantalla is not None:
+            self.pantalla.al_salir()
+        self.db.cerrar()
+        return True
 
 
 def main():
-    """Briefcase y __main__.py llaman a esta función para crear la app."""
     return KaraokeInteligente()
