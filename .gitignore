@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Entornos virtuales (el nuestro vive fuera, pero por si acaso)
+.venv/
+venv/
+
+# Generado por Briefcase (instaladores se publican en Releases)
+build/
+dist/
+logs/
+
+# Datos de ejecución
+*.db
+*.db-journal
+
+# Whisper (lo descarga scripts/descargar_whisper.ps1)
+src/karaoke/resources/whisper/
+*.bin
+
+# Audio temporal
+*.wav
+*.m4a
+
+# Editores
+.vscode/
+.idea/
