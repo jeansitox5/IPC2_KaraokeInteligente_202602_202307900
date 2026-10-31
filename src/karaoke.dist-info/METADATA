@@ -3,9 +3,9 @@ Briefcase-Version: 0.4.7
 Name: karaoke
 Formal-Name: Karaoke Inteligente
 App-ID: gt.edu.usac.ipc2.karaoke
-Version: 0.0.1
+Version: 0.1.0
 Home-page: https://github.com/jeansitox5/IPC2_KaraokeInteligente_202602_202307900
 Download-URL: https://github.com/jeansitox5/IPC2_KaraokeInteligente_202602_202307900
 Author: Jonathan Jeanfranco Chirix Santizo
 Author-email: 3122523740413@ingenieria.usac.edu.gt
-Summary: karaoke que sigue al cantante y muestra la letra sincronizada
+Summary: Karaoke que sigue al cantante y muestra la letra sincronizada

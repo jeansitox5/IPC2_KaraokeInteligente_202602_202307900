@@ -26,7 +26,7 @@ class PantallaDiagnostico(Pantalla):
         return self.desplazable(
             self.encabezado(),
             fila(etiqueta(f"Plataforma: {plataforma.describir()}", 12)),
-            fila(etiqueta(f"Base de datos: {self.app.db.ruta}", 11, color=TEXTO_GRIS)),
+            fila(etiqueta(envolver(f"Base de datos: {self.app.db.ruta}"), 11, color=TEXTO_GRIS)),
             fila(etiqueta(f"{canciones} canciones · {lineas} líneas", 12)),
             fila(etiqueta(f"Motor configurado: {self.app.cfg['MOTOR_VOZ']}", 12)),
             fila(self.lbl_motor), fila(self.btn), fila(self.lbl_nivel), fila(self.lbl_texto),
