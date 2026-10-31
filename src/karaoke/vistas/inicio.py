@@ -57,7 +57,7 @@ class PantallaInicio(Pantalla):
         hijos = [
             etiqueta("Karaoke Inteligente", 24, negrita=True, color=AZUL),
             etiqueta(resumen, 11, color=TEXTO_GRIS),
-            rejilla(botones, 2),
+            rejilla(botones, 1 if es_movil() else 2),
         ]
         if not es_movil():
             self.tecla = toga.TextInput(
