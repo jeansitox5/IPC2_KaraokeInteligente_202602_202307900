@@ -143,7 +143,7 @@ class MotorWhisper(MotorVoz):
         cmd = [
             str(self.exe), "-m", str(self.modelo), "-f", str(ruta),
             "-l", str(self.cfg["IDIOMA"]), "-t", str(self.cfg["WHISPER_HILOS"]),
-            "-nt", "-np",
+            "-nt", "-np", "-sns",
         ]
         if self.contexto:
             cmd += ["--prompt", self.contexto]

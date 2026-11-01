@@ -85,6 +85,22 @@ def test_alinear_transcripcion_con_errores(ctx):
     assert cancion.linea_en(mejor.posicion) == 6
 
 
+def test_alinear_tolera_ruido_fuerte_de_reconocimiento(ctx):
+    """Con una transcripción muy degradada (palabras perdidas y mal oídas,
+    como pasa seguido con Whisper/Android), el puntaje cae por debajo del
+    umbral anterior (0.55) pero sigue arriba del actual (0.45) y sigue
+    identificando la canción correcta. Ver UMBRAL_IDENTIFICACION en config.py."""
+    oido = "un perito dueno acompana bentas xenor marinba".split()
+    mejor = ctx.buscador.alinear(oido)[0]
+    cancion = ctx.buscador.canciones[mejor.codigo]
+    assert cancion.nombre == "Mercado de colores"
+    assert 0.45 <= mejor.puntaje < 0.55
+
+    ajeno = "programacion orientada a objetos con herencia multiple".split()
+    resultados_ajenos = ctx.buscador.alinear(ajeno)
+    assert not resultados_ajenos or resultados_ajenos[0].puntaje < 0.45
+
+
 # ------------------------------------------------------------------ programa
 def test_programa_orden_no_estricto(ctx):
     texto = "Lluvia de octubre\ncamino a chimaltenango\nNo existe\n"

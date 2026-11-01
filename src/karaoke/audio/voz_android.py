@@ -19,7 +19,17 @@ import time
 
 from karaoke.audio.motor_voz import MotorVoz, Observacion, limpiar_transcripcion
 
-UMBRAL_RMS_VOZ = 4.0     # dB que reporta Android (aprox. -2 silencio .. 10 voz fuerte)
+# El nivel de "silencio" que reporta onRmsChanged varía bastante entre
+# teléfonos (ganancia del micrófono, ruido propio del hardware). Un umbral
+# fijo le acertaba a unos equipos y le fallaba a otros (voz que nunca se
+# marca como "hay voz", o ruido de fondo que se confunde con canto). En vez
+# de un número fijo, se sigue el piso de ruido con un rastreador asimétrico:
+# baja rápido en los silencios reales y sube despacio, para no "perseguir"
+# la propia voz del cantante.
+PISO_RMS_INICIAL = -2.0  # suposición de arranque; se corrige en los primeros segundos
+MARGEN_RMS_VOZ = 6.0     # cuánto por encima del piso ya se considera voz
+ALFA_BAJA = 0.3          # el piso baja rápido al detectar silencio más bajo
+ALFA_SUBE = 0.02         # el piso sube despacio (evita que la voz lo arrastre)
 
 # Códigos de error de SpeechRecognizer
 ERROR_SIN_PERMISO = 9
@@ -42,6 +52,7 @@ class MotorAndroid(MotorVoz):
         self.error = ""
         self.mensaje_estado = ""
         self.sin_conexion = True   # preferir reconocimiento sin internet
+        self.piso_rms = PISO_RMS_INICIAL
 
     def disponible(self):
         try:
@@ -69,8 +80,11 @@ class MotorAndroid(MotorVoz):
                 pass
 
             def onRmsChanged(self, rms_db):
-                voz = rms_db > UMBRAL_RMS_VOZ
-                nivel = min(1.0, max(0.0, (rms_db + 2.0) / 12.0))
+                alfa = ALFA_BAJA if rms_db < motor.piso_rms else ALFA_SUBE
+                motor.piso_rms += (rms_db - motor.piso_rms) * alfa
+                umbral = motor.piso_rms + MARGEN_RMS_VOZ
+                voz = rms_db > umbral
+                nivel = min(1.0, max(0.0, (rms_db - motor.piso_rms) / 12.0))
                 motor._emitir(Observacion(None, time.monotonic(), voz=voz, nivel=nivel))
 
             def onBufferReceived(self, buffer):

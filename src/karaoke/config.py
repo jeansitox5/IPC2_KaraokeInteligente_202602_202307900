@@ -28,7 +28,7 @@ DEFAULTS = {
     "SALTO_SEG": (2.0, "Cada cuánto se toma una muestra para Whisper (segundos)."),
     "WHISPER_HILOS": (4, "Hilos de CPU que usa Whisper."),
     # --- Sincronización ------------------------------------------------
-    "UMBRAL_IDENTIFICACION": (0.55, "Puntaje mínimo (0 a 1) para reconocer una canción."),
+    "UMBRAL_IDENTIFICACION": (0.45, "Puntaje mínimo (0 a 1) para reconocer una canción."),
     "UMBRAL_NUEVA": (0.35, "Por debajo de este puntaje la letra se considera nueva."),
     "VELOCIDAD_INICIAL": (2.5, "Palabras por segundo al empezar a seguir una canción."),
     "ADELANTO_SEG": (0.5, "Segundos de anticipación de la línea resaltada."),
