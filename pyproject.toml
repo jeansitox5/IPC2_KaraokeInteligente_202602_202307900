@@ -3,7 +3,7 @@
 [tool.briefcase]
 project_name = "karaoke"
 bundle = "gt.edu.usac.ipc2"
-version = "0.1.0"
+version = "1.0.0"
 url = "https://github.com/jeansitox5/IPC2_KaraokeInteligente_202602_202307900"
 license = "MIT"
 license-files = ["LICENSE"]
